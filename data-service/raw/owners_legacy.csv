@@ -1,0 +1,12 @@
+raw_name,raw_phone,raw_email,raw_city,notes
+"  John Doe  ","(555) 234-5678","JOHN.DOE@GMAIL.COM","Austin","Legacy client"
+"john doe","555.234.5678","john.doe@gmail.com","austin","Duplicate record"
+"Alice Smith","+1 555-987-6543","alice.smith@veterinary.org","Round Rock","VIP Breeder"
+"Bob Jenkins","555-INVALID-PHONE","bob@jenkins.net","Dallas","Bad phone letters"
+"Carlos Santana","555 456 7890","carlos.invalid-email","Houston","Bad email syntax"
+"Emma Watson","555-112-3344","","San Antonio","Missing email allowed"
+"","555-999-0000","noname@farm.org","Austin","Rejected: missing name"
+"David Miller","555-333-2211","david@ranch.com","","Rejected: missing city"
+"Dr. Gregory House","(555) 777-8899","gregory.house@princeton.edu","Plano","Diagnostic vet client"
+"Maria Garcia","+1 (555) 444-5566","m.garcia@rancho.es","El Paso","Bilingual client"
+"Maria Garcia","555-444-5566","m.garcia@rancho.es","el paso","Case insensitive duplicate"

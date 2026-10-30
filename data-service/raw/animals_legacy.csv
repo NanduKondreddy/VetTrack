@@ -1,0 +1,10 @@
+owner_phone,animal_name,raw_species,breed,raw_birth_date,sex
+"(555) 234-5678","Max","canine","German Shepherd","14/05/2021","Male"
+"(555) 234-5678","Luna","DOG","Labrador","2022-08-19","Female"
+"+1 555-987-6543","Oliver","FELINE","Siamese","03 Oct 2020","Male"
+"+1 555-987-6543","Mittens","cat","Persian","12/01/2023","Female"
+"555-112-3344","Bessie","bovine","Angus Cattle","2019-11-04","Female"
+"555-112-3344","Clucky","hen","Rhode Island Red","01/06/2023","Female"
+"555 456 7890","Future Dog","dog","Mixed","2029-12-31","Male"
+"555 456 7890","","dog","Beagle","2021-02-10","Male"
+"(555) 777-8899","Hector","Alien Species","Unknown","2022-04-10","Male"
