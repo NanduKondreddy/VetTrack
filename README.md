@@ -18,18 +18,18 @@
 
 ```mermaid
 graph TD
-    UI[React 18 / Vite Web App<br/>Recharts & Lucide Icons] -->|JWT REST API Calls| API[Spring Boot 3 Backend API<br/>Spring Security & Bean Validation]
-    API -->|JPA & Flyway Migrations| DB[(PostgreSQL 16 Database)]
-    API -->|Observability| Act[Spring Boot Actuator & MDC Logs]
+    UI["React 18 / Vite Web App<br/>Recharts & Lucide Icons"] -->|JWT REST API Calls| API["Spring Boot 3 Backend API<br/>Spring Security & Bean Validation"]
+    API -->|JPA & Flyway Migrations| DB[("PostgreSQL 16 Database")]
+    API -->|Observability| Act["Spring Boot Actuator & MDC Logs"]
     
-    subgraph Data Engineering Pipeline (Python)
-        Raw[Messy Legacy CSVs] --> Clean[pandas Data Cleaner]
-        Clean --> Cleaned[Cleaned Datasets]
-        Cleaned --> Load[Database Ingestion Loader]
+    subgraph Pipeline ["Data Engineering Pipeline (Python)"]
+        Raw["Messy Legacy CSVs"] --> Clean["pandas Data Cleaner"]
+        Clean --> Cleaned["Cleaned Datasets"]
+        Cleaned --> Load["Database Ingestion Loader"]
         Load --> DB
-        Clean --> Err[(import_errors Audit Table)]
-        DB --> Charts[Matplotlib Report Generator]
-        Charts --> Reports[Executive Visualizations (PNG)]
+        Clean --> Err[("import_errors Audit Table")]
+        DB --> Charts["Matplotlib Report Generator"]
+        Charts --> Reports["Executive Visualizations (PNG)"]
     end
 ```
 
