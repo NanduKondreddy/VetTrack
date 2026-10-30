@@ -1,6 +1,6 @@
 # VetTrack: Animal Health Records & Vaccination Monitoring Platform
 
-![VetTrack CI](https://github.com/developer/vettrack/actions/workflows/ci.yml/badge.svg)
+[![VetTrack CI](https://github.com/NanduKondreddy/VetTrack/actions/workflows/ci.yml/badge.svg)](https://github.com/NanduKondreddy/VetTrack/actions/workflows/ci.yml)
 ![Java 17](https://img.shields.io/badge/Java-17-blue)
 ![Spring Boot 3](https://img.shields.io/badge/Spring_Boot-3.2.4-brightgreen)
 ![React 18](https://img.shields.io/badge/React-18.2-61dafb)
