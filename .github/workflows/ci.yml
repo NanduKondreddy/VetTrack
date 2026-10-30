@@ -46,10 +46,14 @@ jobs:
 
       - name: Run Pytest Test Suite
         working-directory: ./data-service
-        run: pytest -v
+        env:
+          PYTHONPATH: .
+        run: python -m pytest -v
 
       - name: Verify Data Cleaning Pipeline
         working-directory: ./data-service
+        env:
+          PYTHONPATH: .
         run: |
           python -m src.clean --in raw/owners_legacy.csv --out cleaned/owners.csv --type owners
           python -m src.clean --in raw/animals_legacy.csv --out cleaned/animals.csv --type animals
