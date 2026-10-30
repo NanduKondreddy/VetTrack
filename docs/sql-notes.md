@@ -1,15 +1,15 @@
 # VetTrack: SQL Notes & Query Optimization Guide
 
-This document explains each query in `sql/analytics.sql` and `sql/data_quality.sql`, the specific business questions they solve, and provides an `EXPLAIN ANALYZE` case study demonstrating query optimization.
+This document details the **13 core SQL queries** (8 analytics queries and 5 data quality queries) in `sql/analytics.sql` and `sql/data_quality.sql`, the specific business questions they solve, and provides the measured query plan from the seeded database.
 
 ---
 
-## 1. Analytics Queries Breakdown (`sql/analytics.sql`)
+## 1. Analytics Queries Breakdown (`sql/analytics.sql` - 8 Queries)
 
 ### Query 1: Animals per owner (Filtered for multi-animal clients)
 * **Business Purpose**: Identifies livestock herds, breeding kennels, and multi-pet households that drive the majority of clinic appointments.
 * **SQL Techniques**: Inner `JOIN`, `GROUP BY`, and `HAVING COUNT(a.id) > 2`.
-* **Performance Note**: Joined on indexed foreign key `animals.owner_id`.
+* **Performance**: Joined on indexed foreign key `animals.owner_id`.
 
 ### Query 2: Vaccinations per vaccine per month
 * **Business Purpose**: Tracks seasonal demand patterns (e.g., Rabies surges in summer, bovine respiratory vaccines ahead of autumn herd weaning).
@@ -41,7 +41,7 @@ This document explains each query in `sql/analytics.sql` and `sql/data_quality.s
 
 ---
 
-## 2. Data Quality & Audit Queries (`sql/data_quality.sql`)
+## 2. Data Quality & Audit Queries (`sql/data_quality.sql` - 5 Queries)
 
 ### Query 9: Null or blank required fields per table
 * **Business Purpose**: Verifies ETL ingestion cleanliness across `owners` and `animals` using modern PostgreSQL `FILTER (WHERE ...)` syntax.
@@ -60,61 +60,42 @@ This document explains each query in `sql/analytics.sql` and `sql/data_quality.s
 
 ---
 
-## 3. Query Optimization Case Study: `EXPLAIN ANALYZE`
+## 3. Query Plan Verification (`EXPLAIN ANALYZE`)
 
-### Problem: Overdue Booster Query (Query 4)
-The overdue vaccination query filters across thousands of historical records looking for vaccinations where `next_due_on < CURRENT_DATE`.
-
-### Before Indexing (`vaccinations.next_due_on`):
+### Measured Query (Query 4: Overdue Booster Query across 1,500 Vaccinations):
 ```sql
-EXPLAIN ANALYZE 
+EXPLAIN ANALYZE
 SELECT v.id, a.name, o.name, v.next_due_on
 FROM vaccinations v
 JOIN animals a ON v.animal_id = a.id
 JOIN owners o ON a.owner_id = o.id
-WHERE v.next_due_on < '2026-10-30';
+WHERE v.next_due_on < CURRENT_DATE;
 ```
 
-**Execution Plan (Before)**:
+### Measured Execution Plan Output from Seeded Database:
 ```
-Hash Join  (cost=128.45..342.10 rows=480 width=98) (actual time=2.150..6.820 rows=452 loops=1)
-  Hash Cond: (a.owner_id = o.id)
-  ->  Hash Join  (cost=85.20..284.15 rows=480 width=56) (actual time=1.420..4.910 rows=452 loops=1)
-        Hash Cond: (v.animal_id = a.id)
-        ->  Seq Scan on vaccinations v  (cost=0.00..182.00 rows=480 width=24) (actual time=0.045..2.110 rows=452 loops=1)
-              Filter: (next_due_on < '2026-10-30'::date)
-              Rows Removed by Filter: 1048
-        ->  Hash  (cost=42.00..42.00 rows=400 width=40) (actual time=0.850..0.850 rows=400 loops=1)
-              ->  Seq Scan on animals a  (cost=0.00..42.00 rows=400 width=40)
-  ->  Hash  (cost=28.00..28.00 rows=200 width=50) (actual time=0.450..0.450 rows=200 loops=1)
-        ->  Seq Scan on owners o  (cost=0.00..28.00 rows=200 width=50)
-Planning Time: 0.380 ms
-Execution Time: 7.210 ms
-```
-*Note*: The database was forced to perform a **Sequential Scan (`Seq Scan`)** on the `vaccinations` table, reading all 1,500 rows into memory and discarding 1,048 rows.
-
-### The Optimization:
-We added a targeted B-tree index on the filtered temporal column:
-```sql
-CREATE INDEX idx_vaccinations_next_due ON vaccinations(next_due_on);
-```
-
-### After Indexing:
-```
-Hash Join  (cost=45.10..188.40 rows=480 width=98) (actual time=0.410..1.890 rows=452 loops=1)
-  Hash Cond: (a.owner_id = o.id)
-  ->  Nested Loop  (cost=12.50..142.15 rows=480 width=56) (actual time=0.120..0.980 rows=452 loops=1)
-        ->  Bitmap Heap Scan on vaccinations v  (cost=8.15..52.30 rows=480 width=24) (actual time=0.080..0.320 rows=452 loops=1)
-              Recheck Cond: (next_due_on < '2026-10-30'::date)
-              ->  Bitmap Index Scan on idx_vaccinations_next_due  (cost=0.00..8.03 rows=480 width=0) (actual time=0.060..0.060 rows=452 loops=1)
-        ->  Index Scan using animals_pkey on animals a  (cost=0.28..0.19 rows=1 width=40) (actual time=0.001..0.001 rows=1 loops=452)
-              Index Cond: (id = v.animal_id)
-  ->  Hash  (cost=28.00..28.00 rows=200 width=50) (actual time=0.210..0.210 rows=200 loops=1)
-        ->  Seq Scan on owners o  (cost=0.00..28.00 rows=200 width=50)
-Planning Time: 0.290 ms
-Execution Time: 2.110 ms
+SELECT
+    "v"."id",
+    "a"."name",
+    "o"."name",
+    "v"."next_due_on"
+FROM "public"."vaccinations" "v"
+    /* public.idx_vaccinations_next_due: next_due_on < CURRENT_DATE */
+    /* WHERE v.next_due_on < CURRENT_DATE */
+    /* scanCount: 1101 */
+INNER JOIN "public"."animals" "a"
+    /* public.PRIMARY_KEY_CC: id = v.animal_id */
+    ON 1=1
+    /* WHERE v.animal_id = a.id */
+    /* scanCount: 2196 */
+INNER JOIN "public"."owners" "o"
+    /* public.PRIMARY_KEY_C: id = a.owner_id */
+    ON 1=1
+    /* scanCount: 2196 */
+WHERE ("v"."next_due_on" < CURRENT_DATE)
+    AND ("a"."owner_id" = "o"."id")
+    AND ("v"."animal_id" = "a"."id")
 ```
 
-### Result:
-- **Execution Time dropped from 7.21 ms to 2.11 ms** (~**70% speedup**).
-- Full table sequential scan replaced by a **Bitmap Index Scan**, completely eliminating unneeded row reads.
+### Observation:
+* The query plan verifies that the optimizer immediately leverages the targeted `idx_vaccinations_next_due` index rather than scanning the full table, routing foreign key joins directly through primary key index lookups (`PRIMARY_KEY_CC` and `PRIMARY_KEY_C`).

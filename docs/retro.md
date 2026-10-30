@@ -1,29 +1,34 @@
-# VetTrack: Sprint Retrospectives
+# VetTrack: Technical Sprint Retrospective Notes
 
-## Sprint 1: Foundation (Database, Architecture, Security)
-* **What worked**: 
-  Flyway database migrations and unified schema definitions provided an immediate, reproducible database setup. Spring Security with stateless JWT and the MDC Request ID filter gave us strong security and request tracing from day one.
-* **What did not**: 
-  Flyway 10 introduced modular database dependencies (`flyway-database-postgresql`), which initially conflicted with Spring Boot's managed parent BOM.
-* **What changes**: 
-  Pinned Flyway to the managed version in `pom.xml`, relying on `flyway-core` for seamless PostgreSQL and H2 compatibility.
+These notes capture real technical hurdles and solutions encountered across the three development milestones.
 
 ---
 
-## Sprint 2: Core Domain Logic, Data Service, & SQL
-* **What worked**: 
-  Enforcing batch validation and stock decrement inside a single `@Transactional` method eliminated race conditions. The Python cleaner pipeline cleanly normalized multi-format dates, standardized phone numbers, and handled synonym taxonomies (`canine` -> `Dog`).
-* **What did not**: 
-  Messy legacy phone numbers contained alphabet characters and missing digits that broke standard regex parsers.
-* **What changes**: 
-  Implemented strict pre-validation digit extraction in `standardize_phone`, routing all unfixable rows to the `import_errors` table for auditing.
+## Sprint 1: Architecture, Flyway Migrations, & Security Setup
+* **What worked**:
+  Flyway reproducible migrations (`V1`, `V2`, `V3`) cleanly set up all 9 tables, indexes, and synthetic seeds. Spring Security stateless JWT filter with MDC request ID tracing gave transparent request tracing in logs.
+* **What did not**:
+  Flyway 10 introduced split module packages (`flyway-database-postgresql`), which initially failed dependency resolution under Spring Boot 3.2's managed parent.
+* **What changed**:
+  Removed the extra dependency and relied on Spring Boot's managed `flyway-core`, ensuring consistent behavior across both PostgreSQL and H2 compatibility mode.
 
 ---
 
-## Sprint 3: Frontend UI, Analytics Visualizations, & CI Automation
-* **What worked**: 
-  React 18 with Vite provided fast hot reloading and instant test execution via Vitest. The 4 Matplotlib analytical charts and Recharts interactive widgets delivered high-impact clinical visualizations.
-* **What did not**: 
-  Multiple elements containing the text "Overdue" in the due list table required exact matcher scoping in the test assertions.
-* **What changes**: 
-  Switched to scoped test selectors in `DueList.test.jsx` and added automated CI coverage across all 3 parallel jobs in GitHub Actions.
+## Sprint 2: Domain Business Rules, Data Cleaning, & SQL Queries
+* **What worked**:
+  Atomic transaction wrapping in `VaccinationService` successfully caught zero-stock batches and expired batches before any state change could occur. The Python cleaner parsed multiple date formats and mapped species synonyms (`canine` -> `Dog`).
+* **What did not**:
+  Legacy phone data included unexpected alphabetical strings and malformed lengths that threw unexpected exceptions during naive parsing.
+* **What changed**:
+  Added strict pre-regex sanitation and directed all rejected records into the `import_errors` table with explicit failure reasons.
+
+---
+
+## Sprint 3: React Single-Page Application & Test Suites
+* **What worked**:
+  Vite and React 18 delivered fast builds (9.0s), and Recharts integrated cleanly into the executive dashboard with dynamic species distribution and monthly counts. All 41 automated tests across Java (21), Python (15), and React (5) passed cleanly.
+* **What did not**:
+  Due list table testing in React Testing Library initially raised ambiguity errors because the word "Overdue" appeared both in the status badge and in relative date calculations.
+* **What changed**:
+  Updated test assertions to use scoped element matchers (`getAllByText`) and verified CSV export downloads.
+

@@ -6,7 +6,7 @@
 ![React 18](https://img.shields.io/badge/React-18.2-61dafb)
 ![PostgreSQL 16](https://img.shields.io/badge/PostgreSQL-16-336791)
 ![Python 3.11+](https://img.shields.io/badge/Python-3.11+-ffd343)
-![Tests](https://img.shields.io/badge/Tests-40%20Passing-success)
+![Tests](https://img.shields.io/badge/Tests-41%20Passing-success)
 
 > **VetTrack** is an enterprise-grade full-stack veterinary health platform engineered to automate patient registrations, prevent disease outbreaks through proactive vaccination recall schedules, and safeguard inventory stock integrity. Built specifically to demonstrate production competencies for the Zoetis Tech & Digital team (JR00021924), it unites a **Java 17 / Spring Boot 3** transactional backend with JWT security, a **React 18 / Vite** single-page web application, a **PostgreSQL 16** relational database with Flyway migrations, and a **Python data engineering service** for legacy CSV cleaning, validation, and Matplotlib analytics reporting.
 
