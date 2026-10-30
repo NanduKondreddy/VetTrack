@@ -1,0 +1,109 @@
+-- V1__initial_schema.sql
+-- VetTrack PostgreSQL Database Schema
+
+CREATE TABLE IF NOT EXISTS users (
+    id BIGSERIAL PRIMARY KEY,
+    username VARCHAR(100) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL,
+    role VARCHAR(50) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS owners (
+    id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(150) NOT NULL,
+    phone VARCHAR(50) NOT NULL,
+    email VARCHAR(150),
+    city VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS animals (
+    id BIGSERIAL PRIMARY KEY,
+    owner_id BIGINT NOT NULL REFERENCES owners(id) ON DELETE CASCADE,
+    name VARCHAR(100) NOT NULL,
+    species VARCHAR(50) NOT NULL,
+    breed VARCHAR(100),
+    birth_date DATE NOT NULL,
+    sex VARCHAR(20) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS vets (
+    id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(150) NOT NULL,
+    license_no VARCHAR(100) NOT NULL UNIQUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS visits (
+    id BIGSERIAL PRIMARY KEY,
+    animal_id BIGINT NOT NULL REFERENCES animals(id) ON DELETE CASCADE,
+    vet_id BIGINT REFERENCES vets(id) ON DELETE SET NULL,
+    visit_date DATE NOT NULL,
+    reason VARCHAR(255) NOT NULL,
+    notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS vaccines (
+    id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(150) NOT NULL UNIQUE,
+    species_target VARCHAR(100) NOT NULL,
+    interval_days INT NOT NULL DEFAULT 365,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS vaccine_batches (
+    id BIGSERIAL PRIMARY KEY,
+    vaccine_id BIGINT NOT NULL REFERENCES vaccines(id) ON DELETE CASCADE,
+    batch_no VARCHAR(100) NOT NULL,
+    expiry_date DATE NOT NULL,
+    quantity_remaining INT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    CONSTRAINT uq_vaccine_batch UNIQUE (vaccine_id, batch_no),
+    CONSTRAINT chk_quantity_positive CHECK (quantity_remaining >= 0)
+);
+
+CREATE TABLE IF NOT EXISTS vaccinations (
+    id BIGSERIAL PRIMARY KEY,
+    animal_id BIGINT NOT NULL REFERENCES animals(id) ON DELETE CASCADE,
+    vaccine_id BIGINT NOT NULL REFERENCES vaccines(id) ON DELETE RESTRICT,
+    batch_id BIGINT NOT NULL REFERENCES vaccine_batches(id) ON DELETE RESTRICT,
+    given_on DATE NOT NULL,
+    next_due_on DATE NOT NULL,
+    visit_id BIGINT REFERENCES visits(id) ON DELETE SET NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    CONSTRAINT chk_vaccination_dates CHECK (next_due_on >= given_on)
+);
+
+CREATE TABLE IF NOT EXISTS import_errors (
+    id BIGSERIAL PRIMARY KEY,
+    source_file VARCHAR(255) NOT NULL,
+    row_number INT NOT NULL,
+    reason VARCHAR(255) NOT NULL,
+    raw_row TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+-- Performance Indexes
+CREATE INDEX IF NOT EXISTS idx_owners_name ON owners(name);
+CREATE INDEX IF NOT EXISTS idx_owners_phone ON owners(phone);
+CREATE INDEX IF NOT EXISTS idx_owners_email ON owners(email);
+CREATE INDEX IF NOT EXISTS idx_animals_owner ON animals(owner_id);
+CREATE INDEX IF NOT EXISTS idx_animals_species ON animals(species);
+CREATE INDEX IF NOT EXISTS idx_visits_animal ON visits(animal_id);
+CREATE INDEX IF NOT EXISTS idx_visits_date ON visits(visit_date);
+CREATE INDEX IF NOT EXISTS idx_vaccine_batches_expiry ON vaccine_batches(expiry_date);
+CREATE INDEX IF NOT EXISTS idx_vaccinations_animal ON vaccinations(animal_id);
+CREATE INDEX IF NOT EXISTS idx_vaccinations_next_due ON vaccinations(next_due_on);
+CREATE INDEX IF NOT EXISTS idx_vaccinations_batch ON vaccinations(batch_id);
