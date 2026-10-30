@@ -1,0 +1,84 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: vettrack-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: vettrack
+      POSTGRES_USER: vetadmin
+      POSTGRES_PASSWORD: vetpassword123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vetadmin -d vettrack"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: vettrack-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: postgres
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: vettrack
+      POSTGRES_USER: vetadmin
+      POSTGRES_PASSWORD: vetpassword123
+      JWT_SECRET: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+      SERVER_PORT: 8080
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: vettrack-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8080/api/v1
+    ports:
+      - "5173:5173"
+
+  data-service:
+    build:
+      context: ./data-service
+      dockerfile: Dockerfile
+    container_name: vettrack-data-service
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: vettrack
+      POSTGRES_USER: vetadmin
+      POSTGRES_PASSWORD: vetpassword123
+    volumes:
+      - ./data-service/reports:/app/reports
+    command: >
+      sh -c "python -m src.clean --in raw/owners_legacy.csv --out cleaned/owners.csv --type owners &&
+             python -m src.clean --in raw/animals_legacy.csv --out cleaned/animals.csv --type animals &&
+             python -m src.make_charts &&
+             python -m src.quality_report"
+
+volumes:
+  postgres_data:
